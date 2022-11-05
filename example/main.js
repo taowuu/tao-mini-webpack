@@ -3,3 +3,4 @@ import { bar } from "./bar.js";
 
 console.log("main");
 foo();
+bar();
