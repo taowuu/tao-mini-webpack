@@ -3,7 +3,10 @@ const fs = require("fs");
 const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const path = require("path");
+const { transformFromAst } = require("babel-core");
+const ejs = require("ejs");
 
+let id = 1
 
 function createAsset(filename) {
   // 1. 获取文件的内容
@@ -24,10 +27,19 @@ function createAsset(filename) {
     },
   });
 
+  // es6+ -> es5
+  const { code } = transformFromAst(ast, null, {
+    presets: ["env"],
+  });
+  // console.log('code ', code)
+
   // 导出文件内容和依赖
   return {
-    source,
+    id: id++, // 路径映射
+    filename,
+    code,
     deps,
+    mapping: {}
   };
 }
 
@@ -43,19 +55,52 @@ function createGraph(filename) {
       // console.log('relativePath, ', relativePath);
       // 获取 ./example/foo.js 的内容和依赖
       const child = createAsset(path.resolve(dirname, relativePath));
+      // 路径映射
+      asset.mapping[relativePath] = child.id
       // console.log('child ', child)
       // 外层 for 继续获取 ./example/tao.js 的内容和依赖
       queue.push(child)
     });
   }
-  console.log('queue ', queue)
+  // console.log('queue ', queue)
+  return queue
+}
+
+function bundle(graph) {
+  // const context = "123";
+
+  // 先去构建 modules
+  function createModules() {
+    const modules = {};
+    graph.forEach((asset) => {
+      modules[asset.id] = [asset.code, asset.mapping];
+    });
+
+    return modules;
+  }
+
+  function emitFile(context) {
+      fs.writeFileSync("./example/dist/bundle.js", context);
+  }
+
+  // 渲染到 bundle 模板
+  const modules = createModules();
+  // console.log('modules ', modules);
+  const bundleTemplate = fs.readFileSync("./bundle.ejs", "utf-8");
+  const code = ejs.render(bundleTemplate, {
+    modules,
+  });
+  // console.log('code ', code);
+
+  emitFile(code);
 }
 
 function test() {
   // const mianjs = createAsset();
   // console.log('main.js: ', mianjs)
 
-  createGraph('./example/main.js')
+  const graph = createGraph('./example/main.js')
+  bundle(graph)
 }
 
 test()
