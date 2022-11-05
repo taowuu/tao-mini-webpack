@@ -36,3 +36,4 @@
 - 安装 `babel-preset-env` 转化代码为 es5
 - 安装 `ejs` 根据模板打包代码
 - 解决路径映射
+- 此时打开 `index.html` 可看到效果
