@@ -1,4 +1,4 @@
-# tao-webpack
+# tao-mini-webpack
 
 ## Webpack 是什么
 - 把多个文件打包成 bundle
